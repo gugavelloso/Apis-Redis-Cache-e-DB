@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 # Carregar variáveis de ambiente
 API1_BASE = os.getenv('API1_URL', 'http://localhost:3000')
-API2_BASE = os.getenv('API2_URL', 'http://localhost:3000')
+API2_BASE = os.getenv('API2_URL', 'http://localhost:4000')
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
 # Setup Redis cache
@@ -41,20 +41,20 @@ def weekly_forecast(city_id):
 
     try:
         # Buscar histórico completo de temperaturas da cidade
-        historico_resp = requests.get(f"{API2_BASE}/forecast/{city_id}")
+        historico_resp = requests.get(f"{API1_BASE}/city/{city_id}")
         if historico_resp.status_code != 200:
             return jsonify({'error': 'Não foi possível obter histórico'}), 404
         historico_json = historico_resp.json()
 
         # Buscar todas leituras
-        tabela_resp = requests.get(f"{API2_BASE}/temperatures")
+        tabela_resp = requests.get(f"{API2_BASE}/weather")
         tabela_resp.raise_for_status()
         dados = tabela_resp.json()
 
-        # Filtrar por city_id e ordenar por recordedAt
+        # Filtrar por city_id e ordenar por forecastDate
         registros = sorted(
             [r for r in dados if r['cityId'] == city_id],
-            key=lambda x: x['recordedAt']
+            key=lambda x: x['forecastDate']
         )
 
         # Últimos 7 registros (supondo um por dia)
@@ -71,7 +71,7 @@ def weekly_forecast(city_id):
 
         response = {
             'cityId': city_id,
-            'cityName': historico_json.get('cityName'),
+            'cityName': historico_json.get('name'),
             'weeklyForecast': weekly
         }
 
